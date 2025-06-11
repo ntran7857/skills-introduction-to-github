@@ -1,0 +1,254 @@
+```{r}
+#1.1
+# Dataframe for female_players_23_updated.csv as 'female'
+library(readr)
+library(stringr)
+female <- read_csv("female_players_23_updated.csv")
+colname <- names(female)
+colname
+names(female) <- str_replace_all(colname, '[:space:]', '_')
+colname
+summary(female)
+
+#Dataframe for Nationality.csv as 'nationality'
+library(readr)
+library(stringr)
+nationality <- read_csv("Nationality.csv")
+colname1 <- names(nationality)
+colname1
+names(nationality) <- str_replace_all(colname1, '[:space:]', '_')
+colname1
+summary(nationality)
+```
+
+```{r}
+#1.2
+#Remove duplicated rows in female dataframe
+removed_rows <- unique(female)
+print("After removing Duplicated Rows:")
+print(nrow(removed_rows))
+print("Before removing Duplicated Rows:")
+print(nrow(female))
+
+#Remove duplicated rows in nationality dataframe
+removed_row <- unique(nationality)
+print("After removing Duplicated Rows:")
+print(nrow(removed_row))
+print("Before removing Duplicated Rows:")
+print(nrow(nationality))
+```
+
+```{r}
+#1.3
+# Merge two dataframes without duplicated rows
+library(dplyr)
+merged_df <- merge.data.frame(removed_row, removed_rows, by = "nationality_id")
+merged_df
+
+#Select preferred foot and nationality and display the player 
+selected_player <- filter(merged_df, preferred_foot == "Right", nationality_name == "Austria", fifa_version == 23, fifa_update == 9)
+
+#Diplay only player's name, preferred foot, nationality, FIFA version and update
+display_player <- select(selected_player, long_name, preferred_foot, nationality_name, fifa_version, fifa_update)
+display_player
+```
+
+
+```{r}
+#1.4
+library(dplyr)
+player_4 <- filter(removed_rows, nation_position == "GK", fifa_version == 23, fifa_update == 9)
+display_player_4 <- select(player_4, player_id, short_name, nation_position, age, international_reputation, fifa_version, fifa_update)
+
+#Sort in descending order of international reputation
+top_5 <- head(display_player_4, n = 5)
+sorted <- top_5 %>%
+  arrange(desc(international_reputation))
+print(sorted)
+
+#Sort in ascending order of age 
+top_5 <- head(display_player_4, n = 5)
+sorted_age <- top_5 %>%
+  arrange(-desc(age))
+print(sorted_age)
+```
+
+
+```{r}
+#1.5
+library(dplyr)
+players_by_nationality <- merged_df %>% 
+  group_by(nationality_name) %>%
+  filter(international_reputation >= 3) %>%
+  summarise(
+    NumPlayers = n(),
+    fifa_version = 23,
+    fifa_update = 9) %>%
+  arrange(desc(NumPlayers))
+top_3 <- head(players_by_nationality, n = 3)
+top_3
+```
+
+
+```{r}
+#1.6
+#Australia
+library(dplyr)
+players_Aus <- merged_df %>% 
+  group_by(nationality_name, long_name) %>%
+  filter(nationality_name == "Australia", fifa_version ==23, fifa_update == 9) %>%
+  summarise(Overall_Scores = overall) %>%
+  arrange(desc(Overall_Scores))
+result <- boxplot(players_Aus$Overall_Scores, plot = FALSE)
+print("Statistics of Box Plot of Overall Scores in Australia:")
+print(result$stats)
+
+library(ggplot2)
+plot_Aus <- ggplot(players_Aus, aes(x = nationality_name, y = Overall_Scores)) + geom_boxplot(fill = "lightblue", color = "black", width = 0.5) + labs(title = "Boxplot Australia:", x = "Nationality", y = "Scores")
+plot_Aus
+
+#United States (US)
+library(dplyr)
+players_US <- merged_df %>% 
+  group_by(nationality_name, long_name) %>%
+  filter(nationality_name == "United States", fifa_version == 23, fifa_update == 9) %>%
+  summarise(Overall_Score = overall) %>%
+  arrange(desc(Overall_Score))
+results <- boxplot(players_US$Overall_Score, plot = FALSE)
+print("Statistics of Box Plot of Overall Scores in US:")
+print(results$stats)
+
+library(ggplot2)
+plot_US <- ggplot(players_US, aes(x = nationality_name, y = Overall_Score)) + geom_boxplot(fill = "lightblue", color = "black", width = 0.5) + labs(title = "Boxplot United States:", x = "Nationality", y = "Scores")
+plot_US
+
+#Describe insights
+#The boxplot results summarise outcome in the following:
+#[1,]: Minimum: Minimum value of Australia dataframe and US dataframe is the same
+#[2,]: First quartile(Q1): First quartile (Q1) value of Australia dataframe is smaller than Q1 value in US dataframe
+#[3,]: Median: Median value of Australia dataframe is smaller than median value in US dataframe
+#[4,]: Third quartile (Q3): Third quartile (Q3) value of Australia dataframe is smaller than Q3 value in US dataframe
+#[5,]: Maximum: Maximum value of Australia dataframe is larger than maximum value in US dataframe
+#The results indicates that some of the players in Australia is better than players in US having the highest maximum value. However, the overall score range of US players are better than players in Australia as having higher Q1, median and Q3 values. 
+```
+
+
+```{r}
+#1.7
+#a) Criteria 1: Goalkeepers who have high overall scores
+#Criteria 2: Goalkeepers who have high international reputation
+#Justification: Goalkeepers who is able to control the ball efficiently and initiate attacks will contribute to the team's overall scores. High overall score shows that the player is able to attack and distribute the ball accurately. And high international reputation is considered as the player is well-known in other countries for their good skills.
+
+#b)
+library(dplyr)
+playerScores <- merged_df %>% 
+  group_by(nationality_name, long_name, nation_position, international_reputation) %>%
+  filter(nation_position == "GK", fifa_version == 23, fifa_update == 9, international_reputation >= 2) %>%
+  summarise(OverallScore = overall) %>%
+  arrange(desc(OverallScore)) 
+playerScores
+
+#c) From the following table, there are 5 goalkeepers who are the best in overall. Alyssa Michele Naeher from United States has the highest overall score which indicates the best performing score with the highest internation reputation which also shows that she is well-known in other countries.
+
+#Recommendation: Alyssa Michele Naeher, Mary Alexandra Earps, Merle Frohms and Rut Hedvig Lindahl are the best goalkeepers with high overall score and international reputation.
+```
+
+```{r}
+#2.1
+library(readxl)
+library(dplyr)
+players <- read_excel("Players.xlsx", skip = 1)
+names_players <- sub("Year","", names(players))
+glimpse(names_players)
+```
+
+```{r}
+#2.2
+#install.packages("tidyverse")
+#a)
+library(tidyverse)
+new_data <- players %>%
+  pivot_longer(cols = starts_with("Year"), names_to = "Year", values_to = "Value") %>%
+  drop_na("Value") 
+colnames(new_data) <- c("Country / Position","Year","Value")
+new_data$Year <- str_replace_all(new_data$Year, "Year", "")
+new_data
+
+#b)
+library(tidyverse)
+seperate_data <- new_data %>%
+  separate(`Country / Position`, into = c("Country","Position"), sep = "/")
+seperate_data
+
+#c)
+library(tidyverse)
+seperate_value <- seperate_data %>%
+  separate(Value, into = c("NumberPlayers","Score"), sep = "-") 
+seperate_value <- seperate_value %>%
+  mutate(Score = gsub("/100","",Score))
+seperate_value
+
+#d)
+print("Number of rows:")
+print(nrow(seperate_value))
+print("Number of columns: ")
+print(ncol(seperate_value))
+
+#e)
+print("Number of distinct Country: ")
+print(length(unique(seperate_value$Country)))
+print("Number of distinct Year:")
+print(length(unique(seperate_value$Year)))
+```
+
+```{r}
+#2.3
+seperate_value$Year<- as.numeric(seperate_value$Year)
+seperate_value$Score <- as.numeric(seperate_value$Score)
+library(dplyr)
+avg_score <- seperate_value %>%
+  filter(Year == 2023) %>%
+  group_by(Country, Year) %>%
+  summarise(AvgScore = mean(Score)) %>%
+  filter(AvgScore >= 65, AvgScore <= 70)
+avg_score
+```
+
+
+```{r}
+#2.4
+library(readxl)
+library(dplyr)
+continent_data <- read_excel("Players.xlsx", "Continent", skip = 2)
+continent_data <- continent_data %>%
+  rename("Country" = "Country or Area", "Continent" = "Continent Name")
+continent_data
+
+print("Number of countries in Continent worksheet:")
+print(length(unique(continent_data$Country)))
+print("Number of countries in Data worksheet: ")
+print(length(unique(seperate_value$Country)))
+
+print("Number of countries do not appear in the Data worksheet:")
+print(length(unique(continent_data$Country)) - length(unique(seperate_value$Country)))
+```
+
+
+```{r}
+#2.5
+
+#a) Criterion: The overall score of African players from high to low 
+#Justification: Players who can navigate the ball and use their skills to score will contribute to the overall scores of the team. The higher the overall score, the better the player is.     
+
+#b) Merge data frame 
+data1 <- unique(seperate_value)
+data1
+library(dplyr)
+data2 <- continent_data %>% 
+  select(Country, Continent) %>%
+  filter(Continent == "Africa") 
+data2
+m_data <- merge(data1,data2, by = "Country", all = TRUE, sort = TRUE, incomparables = NULL)
+m_data
+
+```
